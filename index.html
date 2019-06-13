@@ -1,0 +1,223 @@
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+	<title>Land Change Near U.S. Parks and Protected Areas</title>
+	<!-- Bootstrap CSS -->
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.2/css/all.css"
+		integrity="sha384-/rXc/GQVaYpyDdyxK+ecHPVYJSN9bmVFBvjA/9eOB+pb3F2w2N6fc5qB9Ew5yIns" crossorigin="anonymous">
+	<link rel="stylesheet" href="assets/dist/css/bootstrap.min.css">
+	<link rel="stylesheet" href="assets/dist/css/sumoselect.min.css">
+	<link rel="stylesheet" href="assets/dist/css/BootSideMenu.css">
+	<link rel="stylesheet" href="assets/dist/css/now-ui-kit.min.css">
+	<link rel="stylesheet" href="assets/dist/css/ion.rangeSlider.css">
+	<link rel="stylesheet" href="assets/dist/css/ion.rangeSlider.skinModern.css">
+	<link rel="stylesheet" href="assets/dist/css/fontawesome.min.css">
+
+	<link rel="stylesheet" href="https://js.arcgis.com/4.11/esri/css/main.css">
+	<link rel="stylesheet" href="assets/css/hp.css">
+</head>
+
+<body>
+	<nav class="navbar navbar-expand-lg navbar-dark bg-dark" style="background-color: #2c2c2c; margin-bottom: 0;">
+		<a class="navbar-brand" href="#">Land Change Near U.S. Parks and Protected Areas</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor02"
+			aria-controls="navbarColor02" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+
+		<div class="collapse navbar-collapse" id="navbarColor02">
+			<ul class="navbar-nav mx-auto">
+				<!-- <li class="nav-item active">
+<a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+</li> -->
+				<li class="nav-item">
+					<a class="nav-link" href="" target="_blank">About</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" href="" target="_blank">Help</a>
+				</li>
+			</ul>
+		</div>
+	</nav>
+
+	<div id="viewDiv"></div>
+
+	<div id="main">
+		<div class="container">
+			<!-- 1. Select state  -->
+			<div class="form-row" style="margin-top: 30px">
+				<div class="form-group col-md-10">
+					<label for="dd-states" class="mr-2 col-form-label-sm" style="margin-top: 7px"></label>
+					<select class="form-control form-control-sm" name="dd-states" id="dd-states"></select>
+				</div>
+				<button id="btn-state-reset" class="btn btn-primary btn-icon btn-round reset-button">
+					<i class="fas fa-redo"></i>
+				</button>
+			</div><!-- form-row -->
+
+			<!-- Select GAP status -->
+			<div class="form-row">
+				<div class="form-group col-md-10">
+					<label for="dd-gap-status" class="mr-2 col-form-label-sm"></label>
+					<select id="dd-gap-status" style="margin-top: 5px;" required>
+						<option disabled selected value></option>
+						<option value="gap-status-1">GAP I: Managed for biodiversity-disturbance events proceed</option>
+						<option value="gap-status-2">GAP II: Managed for biodiversity-disturbance events suppressed</option>
+						<option value="gap-status-3">GAP III: Managed for multiple uses-subject to extractive or OHV use</option>
+						<option value="gap-status-4">GAP IV: No known mandate for protection</option>
+					</select>
+				</div>
+				<button id="btn-gap-reset" class="btn btn-primary btn-icon btn-round reset-button">
+					<i class="fas fa-redo"></i>
+				</button>
+			</div>
+
+			<div class="form-row">
+				<div class="form-group col-md-10">
+					<label for="dd-pad" class="mr-2 col-form-label-sm"></label>
+					<select class="form-control form-control-sm" name="dd-pad" id="dd-pad"></select>
+				</div>
+				<div id="data-store" style="display: none;"></div>
+			</div>
+			<blockquote id="pad-info"class="blockquote" style="display: none;">
+				<p id="pad-name" class="md-0"></p>
+				<p id="pad-agency" class="md-0"></p>
+				<p id="pad-dest-type" class="md-0"></p>
+			</blockquote>
+
+			<!-- Load Data Button -->
+			<!-- <button id="btn-getBlock" type="button" class="btn btn-primary">
+				3. Load Data
+			</button> -->
+		</div> <!-- container-->
+
+		<hr>
+
+		<!--Sub Tabs for Maping-->
+		<div id="fields-design" style="display: none;">
+			<ul class="nav nav-tabs" id="tabTwo" role="tablist">
+				<li class="nav-item">
+					<a class="nav-link active" id="metrics-tab" data-toggle="tab" href="#fields" role="tab"
+						aria-controls="fields" aria-selected="true">
+						<i class="fas fa-table"></i> Metrics</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link disabled" id="color-tab" data-toggle="tab" href="#color" role="tab"
+						aria-controls="color" aria-selected="false">
+						<i class="fas fa-palette"></i> Symbology</a>
+				</li>
+			</ul>
+
+			<div class="tab-content" id="mapVizTabContent">
+				<!--Fields-->
+				<div class="tab-pane fade show active" id="fields" role="tabpanel" aria-labelledby="metrics-tab">
+					<div class="container">
+						<div class="row" style="padding-top: 20px;">
+							<div class="col-12 form-group">
+								<label for="select-category" class="col-sm-12 control-label">Select category:</label>
+								<div class=col-12>
+									<select required id="select-category">
+										<option disabled selected value></option>
+										<option value="Housing Density">Housing Density</option>
+										<option value="Impervious Surface">Impervious Surface</option>
+									</select>
+								</div>
+							</div>
+						</div>
+
+						<div class="row" style="padding-top: 20px;">
+							<div class="form-group">
+								<label for="data-fields" class="col-sm-12 control-label">Select field:</label>
+								<div class="col-12">
+									<div id="data-fields" style="margin-top: 20px;"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!--Color-->
+				<div class="tab-pane fade" id="color" role="tabpanel" aria-labelledby="color-tab">
+					<div class="container">
+
+						<div class="row" style="padding-top: 20px;">
+							<div class="col-6 form-group">
+								<label for="select-num-class"
+									class="col-sm-12 control-label noPaddingLeft">Transparency:</label>
+								<input type="text" id="opacity-slider" name="opacitySlider" value="" />
+							</div>
+						</div>
+
+						<div id="group-border" style="display: block;">
+							<div class="row">
+								<div class="col-6">
+									<label for="classificationMethod" class="col-sm-12 control-label noPaddingLeft">1.
+										Select classification</label>
+									<select required id="classificationMethod">
+										<option value="equal-interval">Equal-interval</option>
+										<option selected value="natural-breaks">Natural-breaks</option>
+										<option value="quantile">Quantile</option>
+									</select>
+								</div>
+
+								<div class="col-6 form-group">
+									<label for="select-num-class" class="col-sm-12 control-label noPaddingLeft">2.
+										Select number of class</label>
+									<select required id="select-num-class"></select>
+								</div>
+							</div>
+							<!-- /row -->
+
+							<div id="row">
+								<div class="col-12 form-group noPaddingLeft">
+									<label for="colorScheme" class="col-sm-12 control-label noPaddingLeft">3. Select
+										color scheme</label>
+									<div id="colorScheme" style="text-align: center"></div>
+								</div>
+							</div>
+
+
+							<div class="col-12 form-group" style="text-align: center; margin-top: 20px;">
+								<button id="btn-map" type="button" class="btn btn-primary"
+									style="width: 300px;">Map</button>
+							</div>
+						</div>
+
+					</div>
+
+
+				</div>
+				<!-- /container -->
+
+			</div>
+
+		</div>
+		<!-- /color tab content-->
+	</div>
+	<!-- /fileds-design -->
+
+	 <!-- main-->
+
+	<script src="assets/dist/js/jquery-3.3.1.min.js"></script>
+	<script src="assets/dist/js/popper.min.js"></script>
+	<script src="assets/dist/js/bootstrap.min.js"></script>
+	<script src="assets/dist/js/jquery.sumoselect.min.js"></script>
+	<!-- https://www.jqueryscript.net/menu/Sliding-Side-Menu-Panel-with-jQuery-Bootstrap-BootSideMenu.html -->
+	<script src="assets/dist/js/BootSideMenu.js"></script>
+	<script src="assets/dist/js/now-ui-kit.min.js"></script>
+	<script src="assets/dist/js/d3.v5.min.js"></script>
+	<script src="assets/dist/js/colorbrewer.v1.min.js"></script>
+	<script src="assets/dist/js/ion.rangeSlider.min.js"></script>
+	<script src="assets/dist/js/interact.min.js"></script>
+	<!-- ArcGIS Javasctipt API -->
+	<script src="https://js.arcgis.com/4.11/"></script>
+	<script src="assets/js/hp.data.js"></script>
+	<script src="assets/js/config.js"></script>
+	<script src="assets/js/censusblockinfo.js"></script>
+	<script src="assets/js/color.scheme.js"></script>
+	<script src="assets/js/index.js"></script>
+</body>
+
+</html>

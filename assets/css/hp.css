@@ -1,0 +1,194 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+}
+
+#viewDiv {
+  width: 100%;
+  height: 100%;
+  height: calc(100% - 65px); 
+  height: -o-calc(100% - 65px); /*opera */
+  height: -webkit-calc(100% - 65px); /* google, safari */
+  height: -moz-calc(100% - 65px); /* firefox */
+
+}
+
+#main {
+  margin-top: 62px;
+  height: calc(100% - 80px);
+  height: -o-calc(100% - 80px); /* opera */
+  height: -webkit-calc(100% - 80px); /* google, safari */
+  height: -moz-calc(100% - 80px); /* firefox */
+}
+
+.fullWidthTab {
+  width: 50%;
+}
+
+.bootsidemenu > .menu-wrapper {
+  padding: 20px 20px 20px 20px;
+}
+
+.noPaddingLeft {
+  padding-left: 0;
+}
+
+.btnInline {
+  padding: 0.4rem 1rem;
+}
+
+.censusblock-num {
+  display: none;
+  font-weight: bold;
+  padding-left: 15px;
+}
+
+.navbar .navbar-brand {
+  font-size: 1.5em;
+}
+
+.navbar-nav {
+  font-size: 1.3em;
+}
+
+.table-hover>tbody>tr:hover>td, .table-hover>tbody>tr:hover>th {
+  background-color: #316868;
+  color:#eeeeee;
+}
+
+.table thead th { 
+  background-color: #444;
+  color: #fff;
+}
+
+th {
+  font-weight: inherit;
+  font-family: inherit;
+}
+
+.highlight { 
+  background-color:  #4b6777;
+  color:#fff;
+}
+
+#data-fields {
+  max-height: 250px;
+  overflow: auto;
+  display:inline-block;
+}
+
+#colorScheme {
+  overflow-y: scroll;
+  overflow-x: hidden;
+  width: 300px;
+  height: 130px;
+  margin: 0 auto;
+  background-color: #f5f1f2;
+}
+
+.outer {
+  fill: transparent;
+  /* stroke: transparent;
+  shape-rendering: crispEdges; */
+  z-index: 10;
+}
+
+.outer:hover {
+  stroke: rgba(0, 132, 255, 0.63);
+  stroke-width: 3px;
+}
+
+g.active rect.outer{
+  display: inline;
+  stroke: rgba(255, 0, 119, 0.7);  
+  stroke-width: 5px;
+}
+
+g.inactive rect.out{
+  display: none;
+}
+
+
+#loading {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #fff;
+  opacity: 0.6;
+  z-index: 10;
+}
+
+.spin-loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-top: -45px; /* Half the gif height */
+  margin-left: -45px; /* Half the gif width */
+}
+
+.nav-tabs>.nav-item>.nav-link.active {
+  border-radius: 0;
+}
+
+.btn-color {
+  background-color: #4cb69f;
+}
+
+#group-border {
+  padding-top: 20px;
+  /* border: solid;
+  border-color: gray;
+  border-width: 0.75px;
+  padding: 15px 15px 15px 15px;
+  border-radius: 0.5rem; */
+}
+
+/* .btn-primary {
+  color: #fff;
+  background-color: #4cb69f;
+  border-color: #357ebd; 
+} */
+
+.form-group.col-lg-12 {
+  display: flex;
+  align-items: center;
+}
+
+/* .btn-primary:hover, .btn-primary:focus, .btn-primary:active, .btn-primary.active, .open>.dropdown-toggle.btn-primary {
+  color: #fff;
+  background-color: #FF5A09;
+  border-color: #285e8e; 
+} */
+
+.dropdownLoader {
+  border: 8px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 8px solid #3498db;
+  width: 15px;
+  height: 15px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite; 
+}
+
+.SumoSelect { 
+  width: 100%; 
+}
+
+.reset-button {
+  margin: 23px 0 0 5px;
+}
+
+
+
+
+
+
+
+
