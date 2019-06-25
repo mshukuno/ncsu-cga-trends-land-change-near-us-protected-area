@@ -11,7 +11,7 @@ require([
 	'esri/widgets/Legend',
 	'esri/widgets/BasemapGallery',
 	'esri/widgets/Expand',
-	'esri/widgets/LayerList'
+	'dojo/domReady!'
 ], function(
 	Map,
 	MapView,
@@ -28,8 +28,8 @@ require([
 ) {
 	const VIEW_CENTER_COOR = [-95.84154187664207, 38.004979298982306];
 	const INITIAL_ZOOM_LEVEL = 5;
-	let statesLyr, padLyr, censusblockLyr, padLayerView, map, view, mainWidth, 
-		basemapGallery, bgExpand;
+	let statesLyr, padLyr, censusblockLyr, map, view, mainWidth, 
+		basemapGallery, bgExpand, legend;
 
 	function init() {
 		cache();
@@ -72,9 +72,13 @@ require([
 		$dataStorage = $('#data-store');
 		$btnStateReset = $('#btn-state-reset');
 		$btnGapReset = $('#btn-gap-reset');
+		$padInfoBlock = $('#pad-info-block');
+		$padInfo = $('#pad-info');
+		$noGapInfoModal = $('#gap-no-results');
 	}
 
 	function bindEvents() {
+		
 		$ddStates.SumoSelect({
 			search: true,
 			searchText: 'Search state',
@@ -98,6 +102,8 @@ require([
 		setNumClassesDropdown(7, config.defaultHousing.numClasses);
 		$method.SumoSelect();
 
+		$noGapInfoModal.modal('hide');
+
 		$opacity.ionRangeSlider({
 			min: 0,
 			max: 1,
@@ -118,15 +124,19 @@ require([
 			let state = selected.split(' (')[0];
 			$dataStorage.data({ state: `${state}` });
 			censusblockLyr.visible = false;
-			console.log($dataStorage.data('state'));
 			gapStatusBackToPlaceholder();
 			padBackToPlaceholder();
 			setDefaultFdPanel('defaultHousing');
 			$fdPanel.hide();
+			$padInfoBlock.css('display', 'none');
 			statesLyr.visible = true;
-			if (state != null) {
+			if (state.length > 0) {
 				stateChangeExtent(state);
 				queryProtectedArea(state);
+				createLegend(padLyr, 'Protection Status:');
+			}
+			else {
+				console.error('No state selected');
 			}
 		});
 
@@ -142,12 +152,15 @@ require([
 			padBackToPlaceholder();
 			$selectCategory[0].sumo.selectItem(config.defaultHousing.category);
 			$dataStorage.data({'category': config.defaultHousing.category});
+			$dataStorage.data({'field-name': config.defaultHousing.fieldName});
 			$fdPanel.hide();
+			$padInfoBlock.css('display', 'none');
+			$('#table-data tr').removeClass('highlight');
+			$(`#data-fields tr[data-value='${$dataStorage.data('field-name')}']`).addClass('highlight');
 
-			if (status) {
+			if (state.length > 0 && selected.length > 0) {
 				let expression = `d_State_Nm = '${state}' AND GAP_Sts = '${status}'`;
 				$dataStorage.data({ 'gap-status': `${status}` });
-				console.log($dataStorage.data('gap-status'));
 				let queryGapExtent = queryProtectedAreaExtent(expression);
 				
 				queryGapExtent.then(result => {
@@ -161,18 +174,21 @@ require([
 						setProtectedAreaDropdown(unitNames);
 					}
 					else {
-						alert('No result');
+						$noGapInfoModal.modal('show');
 						stateChangeExtent(state);
 					}
 				});
 			}
-		});
+			else {
+				gapStatusBackToPlaceholder();
+			}
+		}); 
 
 		$ddPad.on('change', () => {
 			view.popup.close();
+			$padInfo.html('');
 			let selectedOriginId = $ddPad.val();
 			let protectedArea = $ddPad.find('option:selected').text();
-			console.log(selectedOriginId);
 			censusblockLyr.visible = false;
 			removeLegend();
 			$selectCategory[0].sumo.selectItem(config.defaultHousing.category);
@@ -180,9 +196,11 @@ require([
 
 			if (selectedOriginId != '') {
 				let expression = `ORIG_FID = '${selectedOriginId}'`;
+				let queryUnitName = queryProtectedAreaExtent(expression);
+				let selectedPadInfo = padInfoFilter(selectedOriginId);
 				$dataStorage.data({'origin-id': selectedOriginId});
 				$dataStorage.data({ 'protected-area': `${protectedArea}` });
-				let queryUnitName = queryProtectedAreaExtent(expression);
+				showSelectedPadInfo(selectedPadInfo);
 				queryUnitName.then(result => {
 					view.goTo(result.extent);
 					padLyr.definitionExpression = '1=1';
@@ -199,7 +217,6 @@ require([
 			let category = $selectCategory.find(':selected').text();
 			if (category != 'Select category') {
 				$dataStorage.data({ category: `${category}` });
-				console.log($dataStorage.data('category'));
 				if ('#table-data'.length) {
 					$('#table-data').remove();
 				}
@@ -213,21 +230,6 @@ require([
 				getCensusBlock();
 			}
 		});
-
-		// $getBlock.on('click', () => {
-		// 	console.log('clicked');
-		// 	censusblockLyr.definitionExpression = '1=1';
-		// 	let originid = $dataStorage.data('origin-id');
-		// 	$selectCategory[0].sumo.selectItem($dataStorage.data('category'));
-		// 	$(`#data-fields tr[data-value='${$dataStorage.data('field-name')}']`)
-		// 		.addClass('highlight');
-		// 	$colorTab.removeClass('disabled');
-		// 	bufferFilter(originid).then(result => {
-		// 		console.log(result);
-		// 		censusBlockFilter(result);
-		// 	});
-		// 	$fdPanel.show();
-		// });
 
 		$numClasses.on('change', () => {
 			let classes = Number($numClasses.find(':selected').text());
@@ -244,10 +246,8 @@ require([
 		});
 
 		$btnMap.on('click', () => {
-			console.log('clicked');
 			let colorscheme = [],
 				childs = $($dataStorage.data('color-id'));
-			console.log('child', childs);
 			childs[0].childNodes.forEach(d => {
 				if (d.attributes.fill) {
 					colorscheme.push(d.attributes.fill.value);
@@ -260,8 +260,6 @@ require([
 		});
 
 		$btnStateReset.on('click', () => {
-			// view.center = VIEW_CENTER_COOR;
-			// view.zoom = INITIAL_ZOOM_LEVEL;
 			view.goTo(statesLyr.fullExtent);
 			initSettings();
 		});
@@ -277,12 +275,23 @@ require([
 			$dataStorage.data({'protected-area': ''});
 			$dataStorage.data({'pad-info': ''});
 			setDefaultFdPanel('defaultHousing');
-			$selectCategory[0].sumo.selectItem($dataStorage.data('category'));
-			if (state) {
+			if (state.length > 0) {
 				stateChangeExtent(state);
 				queryProtectedArea(state);
+				createLegend(padLyr, 'Protection Status:');
 			}
 		});
+	}
+
+	function showSelectedPadInfo(selectedPadInfo) {
+		if (selectedPadInfo) {
+			$padInfo.html(`<b>Designation Type:</b> ${selectedPadInfo.destType}<br>
+			<b>Federal Management Agency:</b> ${selectedPadInfo.agency}`);
+			$padInfoBlock.css('display', 'block');
+		}
+		else {
+			console.log('No selected protected area information found.');
+		}
 	}
 
 	/*========== Feature Filter ========== */
@@ -308,7 +317,6 @@ require([
 						reject(Error('There is no buffer feature returned.'));
 					}
 				});
-				
 			}
 			else{
 				reject(Error('No origin id.'));
@@ -325,14 +333,12 @@ require([
 			.addClass('highlight');
 		$colorTab.removeClass('disabled');
 		bufferFilter(originid).then(result => {
-			console.log(result);
 			censusBlockFilter(result);
 		});
 		$fdPanel.show();
 	}
 
 	function censusBlockFilter(bufferGeom) {
-		console.log(bufferGeom);
 		let query;
 		query = censusblockLyr.createQuery();
 		query.geometry = bufferGeom;
@@ -343,13 +349,10 @@ require([
 
 		censusblockLyr.queryFeatures(query).then(results => {
 			if(results.features.length > 0){
-				console.log('intersects', results);
-
 				getCensusBlockIds(results)
 					.then(objectsIds => {
-						return setDefinitionExpression(objectsIds, 'OBJECTID', 'OR');
+						return `OBJECTID IN (${objectsIds})`;
 					}).then(expression => {
-						// alert(expression);
 						censusblockLyr.definitionExpression = expression;
 					}).then(() => {
 						censusblockLyr.queryExtent(query).then(result => {
@@ -358,10 +361,21 @@ require([
 						setThematicMapRenderer();
 					});
 			}
-			// else{
-			// 	// alert('No intersects found.');
-			// }
 		});
+	}
+
+	function padInfoFilter(originId) {
+		let info = $dataStorage.data('padInfo');
+		let match;
+		if (info.length > 0) {
+			$.each(info, (i, v) => {
+				if (v.originId == originId) {
+					match = info[i];
+					return;
+				}
+			});
+		}
+		return match;
 	}
 
 	/*========== Utils ========== */
@@ -372,11 +386,9 @@ require([
 				let result = $.map(data.features, d => {
 					return d.attributes.OBJECTID;
 				});
-				console.log('Ids', result);
-				resolve(result);
+				resolve(result.sort());
 			}
 			else{
-				// alert('No features');
 				reject(new Error('No features.'));
 			}
 		});
@@ -429,7 +441,6 @@ require([
 			if(!a.hasOwnProperty(key) || !b.hasOwnProperty(key)) {
 				return 0; 
 			}
-			
 			const varA = (typeof a[key] === 'string') ? 
 				a[key].toUpperCase() : a[key];
 			const varB = (typeof b[key] === 'string') ? 
@@ -457,13 +468,13 @@ require([
 					'unitName': d.attributes.Unit_Nm,
 					'agency': d.attributes.d_Mang_Nam,
 					'destType': d.attributes.d_Des_Tp
-				}
+				};
 			});
 		}).then(attrs => {
 			return attrs.sort(compareValues('unitName'));
 		}).then(sorted => {
 			$dataStorage.data({'pad-info': sorted});
-			padBackToPlaceholder()
+			padBackToPlaceholder();
 			sorted.forEach(d => {
 				$ddPad[0].sumo.add(d.originId, d.unitName);
 			});
@@ -481,60 +492,26 @@ require([
 		$numClasses[0].sumo.selectItem(`${selectItem}`);
 	}
 
-	function setDefinitionExpression(data, fieldName, operator) { 
-		return new Promise((resolve, reject) => {
-			if(data.length > 0){
-				let expression = '';
-				data.forEach((val, i) => {
-					if (i == data.length - 1) {
-						expression = expression + `${fieldName} = ${val}`;
-					} else {
-						expression = expression + `${fieldName} = ${val} ${operator} `;
-					}
-				});
-				resolve(expression);
-			}
-			else{
-				reject(Error('No Ids'));
-			}
-		});
-	}
-
-	function hideFieldDesign(){
-		$metricsTab.click();
-		$('.nav-tabs a[href="#fields"]').tab('show');
-		$colorTab.attr('class', 'nav-link disabled');
-		$fdPanel.hide();
-		$method[0].sumo.selectItem(config.defaultHousing.method);
-		$selectCategory[0].sumo.selectItem(config.defaultHousing.category);
-		defaultOpacity();
-		setNumClassesDropdown(7, config.defaultHousing.numClasses);
-		setColorSchemeByCategoryNum(config.defaultHousing.numClasses);
-	}
-
 	function defaultOpacity() {
 		ionInstance.update({from: 1});
 		censusblockLyr.opacity = 1;
 	}
 
 	function setThematicMapRenderer() {
-		console.log($dataStorage.data('protected-area'));
 		let classbreakinfo = [];
 		let renderer;
-		let popupTitle = `<b>Census Block: ${$dataStorage.data('protected-area')}, ${$dataStorage.data('state')}</b>`;
+		let popupTitle = `<b>Census Block Group:</b>: ${$dataStorage.data('state')}</b>`;
 		let popupTemplate = {
 			title: popupTitle,
 			content: `<b>${$dataStorage.data('field-name')}:</b> {${$dataStorage.data('field-name')}:NumberFormat}`
 		};
 		censusblockLyr.popupTemplate = popupTemplate;
-		console.log('field-name', $dataStorage.data('field-name'));
 		classBreaks({
 			layer: censusblockLyr,
 			field: $dataStorage.data('field-name'),
 			classificationMethod: $dataStorage.data('method'),
 			numClasses: $dataStorage.data('num-classes'),
 		}).then(response => {
-			console.log('response', response);
 			let numBreaks = response.classBreakInfos.length;
 
 			if (numBreaks < $dataStorage.data('num-classes')) {
@@ -566,7 +543,6 @@ require([
 					label: d.label,
 				});
 			});
-			console.log(classbreakinfo);
 			renderer = new ClassBreaksRenderer({
 				field: $dataStorage.data('field-name'),
 				classBreakInfos: classbreakinfo,
@@ -574,10 +550,9 @@ require([
 
 			censusblockLyr.renderer = renderer;
 			censusblockLyr.visible = true;
-			createLegend();
+			createLegend(censusblockLyr, 'Census Block Group:');
 		});
 	}
-
 	// Events
 	/*========== Extent ========== */
 	function stateChangeExtent(state) {
@@ -644,7 +619,7 @@ require([
 		query.where = expression;
 		query.outSpatialReference = new SpatialReference(102100);
 		return padLyr.queryExtent(query).then(result => {
-			return result
+			return result;
 		}); 
 	}
 
@@ -719,18 +694,20 @@ require([
 	}
 
 	/*========== Legend ========== */
-	function createLegend() {
+	function createLegend(layer, title) {
 		removeLegend();
-		let legend = new Legend({
+		legend = new Legend({
 			id: 'legendWrapper',
 			view: view,
+			label: 'test',
 			layerInfos: [
 				{
-					layer: censusblockLyr,
-					title: 'Census Block Group:',
+					layer: layer,
+					title: title,
 				},
 			],
 		});
+
 		view.ui.add(legend, 'bottom-left');
 
 		interact(legend.container).draggable({
@@ -772,7 +749,6 @@ require([
 	}
 
 	function createLayers() {
-		
 		/*========== States Layer========== */
 		statesLyr = new FeatureLayer(config.states.url, {
 			title: config.states.title,
@@ -817,6 +793,7 @@ require([
 			title: config.conus_pad.title,
 			outFields: config.conus_pad.outfields,
 			visible: false,
+			opacity: 1,
 			popupTemplate: {
 				title: '<b>Protected Area</b><br>',
 				content: `<b>Name: </b> {Unit_Nm}<br>
@@ -887,12 +864,10 @@ require([
 	mainWidth = $('#main').width() - 50;
 
 	$(document).ready(function() {
+		$('[data-toggle="tooltip"]').tooltip({
+			container: '#main'
+		});
 		init();
 	});
-	// window.onload = function(){
-	// 	setInterval(() => {
-	// 		alert('Hello');
-	// 	}, 7000);
-	// };
 
 });
