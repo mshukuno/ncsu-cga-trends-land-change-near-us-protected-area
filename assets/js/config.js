@@ -31,7 +31,7 @@ const config = {
 	census_block: {
 		url:
 			//'https://services1.arcgis.com/aT1T0pU1ZdpuDk1t/arcgis/rest/services/Cont_US_Block_Groups_10_00_90/FeatureServer/0',
-			'https://services1.arcgis.com/aT1T0pU1ZdpuDk1t/arcgis/rest/services/Cont_US_Block_Groups_10_00_90_PA10km/FeatureServer/2',
+			'https://services1.arcgis.com/aT1T0pU1ZdpuDk1t/arcgis/rest/services/Cont_US_Block_Groups_10_00_90_PA10km/FeatureServer/0',
 		title: 'Census Block',
 		layerid: 'CensusBlockLyr',
 		symbolflag: 'false',
