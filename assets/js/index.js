@@ -11,6 +11,7 @@ require([
 	'esri/widgets/Legend',
 	'esri/widgets/BasemapGallery',
 	'esri/widgets/Expand',
+	'esri/core/watchUtils',
 	'dojo/domReady!'
 ], function(
 	Map,
@@ -24,7 +25,8 @@ require([
 	classBreaks,
 	Legend,
 	BasemapGallery,
-	Expand
+	Expand,
+	watchUtils
 ) {
 	const VIEW_CENTER_COOR = [-95.84154187664207, 38.004979298982306];
 	const INITIAL_ZOOM_LEVEL = 5;
@@ -75,6 +77,7 @@ require([
 		$padInfoBlock = $('#pad-info-block');
 		$padInfo = $('#pad-info');
 		$noGapInfoModal = $('#gap-no-results');
+		// $loading = $('#loading');
 	}
 
 	function bindEvents() {
@@ -151,8 +154,10 @@ require([
 			removeLegend();
 			padBackToPlaceholder();
 			$selectCategory[0].sumo.selectItem(config.defaultHousing.category);
-			$dataStorage.data({'category': config.defaultHousing.category});
-			$dataStorage.data({'field-name': config.defaultHousing.fieldName});
+			setDefaultFdPanel('defaultHousing');
+			// $dataStorage.data({'category': config.defaultHousing.category});
+			// $dataStorage.data({'field-name': config.defaultHousing.fieldName});
+			// $dataStorage.data({'num-classes': config.defaultHousing.numClasses});
 			$fdPanel.hide();
 			$padInfoBlock.css('display', 'none');
 			$('#table-data tr').removeClass('highlight');
@@ -192,24 +197,32 @@ require([
 			censusblockLyr.visible = false;
 			removeLegend();
 			$selectCategory[0].sumo.selectItem(config.defaultHousing.category);
-			$dataStorage.data({'category': config.defaultHousing.category});
+			setDefaultFdPanel('defaultHousing');
+			// $dataStorage.data({'category': config.defaultHousing.category});
+			// $dataStorage.data({'num-classes': config.defaultHousing.numClasses});
 
 			if (selectedOriginId != '') {
 				let expression = `ORIG_FID = '${selectedOriginId}'`;
-				let queryUnitName = queryProtectedAreaExtent(expression);
+				let queryUnitName = queryProtectedAreaExtent(expression); //Promise
 				let selectedPadInfo = padInfoFilter(selectedOriginId);
 				$dataStorage.data({'origin-id': selectedOriginId});
 				$dataStorage.data({ 'protected-area': `${protectedArea}` });
 				showSelectedPadInfo(selectedPadInfo);
 				queryUnitName.then(result => {
-					view.goTo(result.extent);
 					padLyr.definitionExpression = '1=1';
 					padLyr.definitionExpression = expression;
+					setTimeout(() => {
+						view.goTo(result.extent, options={duration: 500});
+						statesLyr.visible = false;
+					}, 1000);
+				}, err => {
+					console.error(`Protected Area query failed.\n${err}`);
 				});
-				statesLyr.visible = false;
-				$metricsTab.click();
-				$fdPanel.hide();
-				getCensusBlock();
+				setTimeout(() => {
+					$metricsTab.click();
+					$fdPanel.hide();
+					getCensusBlock();
+				}, 3000);
 			}
 		});
 
@@ -346,7 +359,6 @@ require([
 		query.returnGeometry = true;
 		query.outField = ['*'];
 		query.outSpatialReference = new SpatialReference(102100);
-
 		censusblockLyr.queryFeatures(query).then(results => {
 			if(results.features.length > 0){
 				getCensusBlockIds(results)
@@ -355,10 +367,16 @@ require([
 					}).then(expression => {
 						censusblockLyr.definitionExpression = expression;
 					}).then(() => {
-						censusblockLyr.queryExtent(query).then(result => {
-							view.goTo(result.extent);
-						});
 						setThematicMapRenderer();
+						censusblockLyr.queryExtent(query).then(result => {
+							view.goTo(result.extent, options={duration:500});
+							if(view.extent){
+								censusblockLyr.visible = true;
+							}
+						});
+
+					}, err => {
+						console.alert('Census Block Group query faild.')
 					});
 			}
 		});
@@ -478,6 +496,8 @@ require([
 			sorted.forEach(d => {
 				$ddPad[0].sumo.add(d.originId, d.unitName);
 			});
+		}, err => {
+			alert(`Protected area query failed.\n${err}`)
 		});
 	}
 
@@ -549,7 +569,7 @@ require([
 			});
 
 			censusblockLyr.renderer = renderer;
-			censusblockLyr.visible = true;
+			//censusblockLyr.visible = true;
 			createLegend(censusblockLyr, 'Census Block Group:');
 		});
 	}
@@ -608,6 +628,8 @@ require([
 			$dataStorage.data({ 'PAD': results.features });
 			//console.log('.data()', $('#store').data('PAD'));
 			return results;
+		}, err => {
+			alert('Protected area unit name couldn\'t find.');
 		});
 	}
 
@@ -620,6 +642,8 @@ require([
 		query.outSpatialReference = new SpatialReference(102100);
 		return padLyr.queryExtent(query).then(result => {
 			return result;
+		}, err => {
+			alert('Protected Area query failed.');
 		}); 
 	}
 
@@ -861,6 +885,29 @@ require([
 			down: 'fas fa-angle-double-right',
 		},
 	});
+
+	// function interactExtent() {
+	// 	let flag = false;
+	// 	watchUtils.whenTrue(view, 'interacting', evt => {
+	// 		flag = true;
+	// 	});
+	// 	return flag;
+	// }
+
+	// function loadSpiner() {
+	// 	view.watch('updating', updating => {
+	// 		let flag = interactExtent();
+	// 		if (updating && flag){
+	// 			$loading.hide();
+	// 		}
+	// 		else if (updating && !flag) {
+	// 			$loading.show();
+	// 		}
+	// 	});
+	// 	$loading.hide();
+	// }
+
+
 	mainWidth = $('#main').width() - 50;
 
 	$(document).ready(function() {
