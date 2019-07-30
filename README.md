@@ -1,5 +1,5 @@
 # Trends Land Change Near US Protected Area
-*Last updates: June 13, 2019*<br>
+*Last updates: July 29, 2019*<br>
 *Version: beta*
 
 **Organization:**<br>
