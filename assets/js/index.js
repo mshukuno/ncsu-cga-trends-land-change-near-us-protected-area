@@ -85,19 +85,19 @@ require([
 		$ddStates.SumoSelect({
 			search: true,
 			searchText: 'Search state',
-			placeholder: '1. Select state'
+			placeholder: 'I. Select state'
 		});
 
 		$ddGapStatus.SumoSelect({
 			search: true,
 			searchText: 'Search protection status',
-			placeholder: '2. Select protection status'
+			placeholder: 'II. Select protection status'
 		});
 
 		$ddPad.SumoSelect({
 			search: true,
 			searchText: 'Search protected area',
-			placeholder: '3. Select protected area'
+			placeholder: 'III. Select protected area'
 		});
 
 		$selectCategory.SumoSelect();
